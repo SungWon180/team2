@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.team2.householdledger.common.mapper.CommCodeMapper">
+    <select id="findByGrpCd" resultType="com.team2.householdledger.common.dto.CommCode"> SELECT
+        comm_cd AS commCd, grp_cd AS grpCd, comm_nm AS commNm, sort_no AS sortNo, use_yn AS useYn
+        FROM comm_code WHERE grp_cd = #{grpCd} AND use_yn = 'Y' ORDER BY sort_no ASC </select>
+
+    <select id="findNmByCommCd" resultType="String"> SELECT comm_nm FROM comm_code WHERE comm_cd =
+        #{commCd} </select>
+</mapper>
