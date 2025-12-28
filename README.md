@@ -58,51 +58,73 @@
 **`graph TD`** 를 사용하여 팀원들이 구현할 기능의 포함(`<<include>>`) 및 확장(`<<extend>>`) 관계를 표현했습니다.
 
 ```mermaid
-graph TD
+graph LR
+    %% 1. 사용자 액터 (좌측 배치)
     User((👤 사용자))
+    style User fill:#ffffff,stroke:#333,stroke-width:2px
 
+    %% 2. 전체 시스템
     subgraph System ["가계부 시스템 (Household Ledger)"]
-        direction TB
-
+    direction TB %% 서브그래프 내부 세로 정렬
+        
+        %% (1) 회원 관리 패키지
         subgraph Member [회원 관리 - 윤성원]
+            direction TB
             Join(회원가입)
             Login(로그인)
             Update(내 정보 수정)
             Withdraw(회원 탈퇴)
         end
 
+        %% (2) 가계부 패키지
         subgraph Ledger [가계부 - 정병진]
+            direction TB
             List(내역 조회)
             Write(가계부 등록)
             Edit(수정/삭제)
-            CheckCat(카테고리 확인)
+            CheckCat[카테고리 확인] %% 사각형으로 표현 (내부 로직)
         end
 
+        %% (3) 통계 및 알림 패키지
         subgraph Stats [통계 - 최현지]
+            direction TB
             MonthStats(월별 통계)
             CatStats(카테고리별 통계)
         end
 
         subgraph Notice [알림 - 김태형]
+            direction TB
             Alert(예산 초과 알림)
         end
     end
 
-    %% 사용자 액션
+    %% 3. 연결선 (최대한 꼬이지 않게 순서 배치)
     User --> Join
     User --> Login
     User --> Update
-    User --> Withdraw
     User --> List
     User --> Write
     User --> Edit
     User --> MonthStats
-    User --> CatStats
 
-    %% 관계 정의 (Include & Extend)
-    Write -...->|&lt;&lt;include&gt;&gt;| CheckCat
-    Alert -...->|&lt;&lt;extend&gt;&gt;| Write
-    %% 설명: 가계부 등록 시 '카테고리 확인'은 필수(include), '예산 초과 알림'은 조건부 실행(extend)
+    %% 4. 관계 정의 (Include & Extend)
+    %% 가계부 등록에는 카테고리 확인이 포함됨
+    Write -.- |include| CheckCat
+    %% 알림은 가계부 등록 시 조건부 발생 (확장)
+    Alert -.- |extend| Write
+
+    %% 5. 스타일링 (색상 구분)
+    classDef memClass fill:#e3f2fd,stroke:#1e88e5,stroke-width:1px;
+    class Join,Login,Update,Withdraw memClass;
+
+    classDef ledClass fill:#e8f5e9,stroke:#43a047,stroke-width:1px;
+    class List,Write,Edit,CheckCat ledClass;
+
+    classDef statClass fill:#fff3e0,stroke:#fb8c00,stroke-width:1px;
+    class MonthStats,CatStats statClass;
+
+    classDef notiClass fill:#fce4ec,stroke:#d81b60,stroke-width:1px;
+    class Alert notiClass;
 ```
 
 ### 2. 데이터베이스 설계 (ERD)
