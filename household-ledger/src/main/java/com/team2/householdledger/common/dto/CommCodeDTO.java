@@ -3,7 +3,7 @@ package com.team2.householdledger.common.dto;
 import lombok.Data;
 
 @Data
-public class CommCode {
+public class CommCodeDTO {
     private String commCd; // 코드
     private String grpCd; // 그룹코드
     private String commNm; // 코드명

@@ -12,6 +12,38 @@
 | **최현지** | Developer | **통계 & 조회** (차트, 필터링) |
 | **김태형** | Documentation | **문서화 & 알림** (사용 가이드) |
 
+
+---
+
+## 👨‍💻 팀원별 작업 가이드 (Work Guide)
+팀장(정진호)이 **기본 스켈레톤(Skeleton)** 코드를 모두 생성해두었습니다.
+각 담당자는 본인의 패키지 내 파일만 수정하면 됩니다. **다른 사람의 코드는 건드리지 마세요!**
+
+### 1. **윤성원** (회원 관리)
+- **작업 경로**: `src/main/java/com/team2/householdledger/member`
+- **수정해야 할 파일**:
+    - `controller/MemberController.java`: 회원가입(`join`), 수정, 탈퇴 로직 채우기
+    - `service/UserService.java`: 비즈니스 로직 (비밀번호 암호화 등)
+    - `mapper/UserMapper.xml`: 추가 쿼리 필요 시 작성
+- **참고**: `LoginController.java`는 이미 완성되어 있으니 참고용으로만 보세요.
+
+### 2. **정병진** (가계부 CRUD)
+- **작업 경로**: `src/main/java/com/team2/householdledger/ledger`
+- **수정해야 할 파일**:
+    - `dto/LedgerDTO.java`: 필요 시 필드 추가
+    - `controller/LedgerController.java`: 수정(`PUT`), 삭제(`DELETE`) 메서드 완성
+    - `service/LedgerService.java`: 본인 확인 로직 등 추가
+    - `mapper/LedgerMapper.xml`: **River Style** 줄바꿈 엄수!
+- **참고**: 주석에 적힌 `TODO` 항목들을 하나씩 해결하면 됩니다.
+
+### 3. **최현지** (통계)
+- **작업 경로**: `src/main/java/com/team2/householdledger/stats`
+- **수정해야 할 파일**:
+    - `dto/StatsDTO.java`: 통계 결과 담을 필드 확장
+    - `mapper/StatsMapper.xml`: `GROUP BY` 쿼리 작성 (월별, 카테고리별)
+    - `controller/StatsController.java`: 월별 통계 API 추가 구현
+- **참고**: 복잡한 쿼리는 팀장(정진호)에게 질문하세요. DB 함수 `fn_get_comm_nm` 적극 활용!
+
 ---
 
 ## 🛠 기술 스택 (Tech Stack)
@@ -60,23 +92,41 @@
 
 ```mermaid
 graph LR
-    U((사용자 User))
-    
-    subgraph Member[회원 시스템]
-        U --> UC1[회원가입]
-        U --> UC2[로그인]
-        U --> UC3[내 정보 수정]
-        U --> UC4[회원 탈퇴]
+    %% 사용자 Actor (Box 외부에 위치)
+    U[👤 사용자]
+
+    %% 시스템 경계 (System Boundary)
+    subgraph System ["가계부 시스템 (Household Ledger)"]
+        direction TB
+        
+        subgraph Member [회원 관리]
+            UC1(회원가입)
+            UC2(로그인)
+            UC3(내 정보 수정)
+            UC4(회원 탈퇴)
+        end
+
+        subgraph Ledger [가계부 관리]
+            UC5(수입/지출 등록)
+            UC6(내역 조회)
+            UC7(내역 수정/삭제)
+        end
     end
 
-    subgraph Ledger[가계부 시스템]
-        U --> UC5[수입/지출 등록]
-        U --> UC6[내역 조회]
-        U --> UC7[내역 수정/삭제]
-    end
+    %% 관계 연결
+    U --> UC1
+    U --> UC2
+    U --> UC3
+    U --> UC4
+    U --> UC5
+    U --> UC6
+    U --> UC7
     
-    style Member fill:#f9f,stroke:#333,stroke-width:2px
-    style Ledger fill:#bbf,stroke:#333,stroke-width:2px
+    %% 스타일링
+    style U fill:#fff,stroke:#333,stroke-width:2px,font-size:15px
+    style System fill:#f9f9f9,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+    style Member fill:#e1f5fe,stroke:#0277bd
+    style Ledger fill:#e8f5e9,stroke:#2e7d32
 ```
 
 ### 2. 데이터베이스 설계 (ERD)
