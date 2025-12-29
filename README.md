@@ -343,16 +343,6 @@ CREATE TABLE ledgers (
     FOREIGN KEY (comm_cd) REFERENCES comm_code(comm_cd)
 );
 
--- 4. 알림 테이블 (김태형 담당 기능)
-CREATE TABLE notices (
-    notice_no INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_no INT UNSIGNED NOT NULL,
-    message VARCHAR(255) NOT NULL,
-    read_yn CHAR(1) DEFAULT 'N',
-    created_dt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_no) REFERENCES users(user_no)
-);
-
 -- [중요] 함수 생성
 DELIMITER $$
 CREATE FUNCTION fn_get_comm_nm(_comm_cd CHAR(5)) RETURNS VARCHAR(30)
