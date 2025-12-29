@@ -183,7 +183,7 @@ graph LR
 
 ```mermaid
 erDiagram
-    USERS {
+    users {
         INT_UNSIGNED user_no PK "회원번호"
         VARCHAR user_id "로그인ID"
         VARCHAR user_pw "비밀번호"
@@ -192,13 +192,13 @@ erDiagram
         DATETIME reg_dt "가입일"
     }
     
-    COMM_CODE {
+    comm_code {
         CHAR comm_cd PK "코드 (CHAR 5)"
         CHAR grp_cd "그룹코드"
         VARCHAR comm_nm "코드명"
     }
     
-    LEDGERS {
+    ledgers {
         INT_UNSIGNED ledger_no PK "내역번호"
         INT_UNSIGNED user_no FK "작성자"
         CHAR comm_cd FK "카테고리"
@@ -207,7 +207,7 @@ erDiagram
         VARCHAR memo "메모/비고"
     }
 
-    BUDGETS {
+    budgets {
         INT_UNSIGNED budget_no PK "예산번호"
         INT_UNSIGNED user_no FK "사용자"
         INT target_year "년"
@@ -215,14 +215,14 @@ erDiagram
         INT budget_amt "총예산"
     }
 
-    BUDGET_CATES {
+    budget_cates {
         INT_UNSIGNED budget_cate_no PK "상세예산번호"
         INT_UNSIGNED budget_no FK "예산번호"
         CHAR comm_cd FK "카테고리"
         INT budget_amt "목표금액"
     }
 
-    MONTHLY_SUMMARY {
+    monthly_summary {
         INT_UNSIGNED summary_no PK "요약번호"
         INT_UNSIGNED user_no FK "사용자"
         INT target_year "년"
@@ -232,12 +232,12 @@ erDiagram
     }
 
     %% 관계 설정 (1 : N)
-    USERS ||--o{ LEDGERS : "1 : N (작성)"
-    COMM_CODE ||--o{ LEDGERS : "1 : N (분류)"
-    users ||--o{ BUDGETS : "1 : N"
-    BUDGETS ||--o{ BUDGET_CATES : "1 : N"
-    COMM_CODE ||--o{ BUDGET_CATES : "1 : N"
-    users ||--o{ MONTHLY_SUMMARY : "1 : N"
+    users ||--o{ ledgers : "1 : N (작성)"
+    comm_code ||--o{ ledgers : "1 : N (분류)"
+    users ||--o{ budgets : "1 : N"
+    budgets ||--o{ budget_cates : "1 : N"
+    comm_code ||--o{ budget_cates : "1 : N"
+    users ||--o{ monthly_summary : "1 : N"
 ```
 
 </details>
@@ -291,9 +291,11 @@ erDiagram
 - **작업 경로**: `src/main/java/com/team2/householdledger/notice`
 - **수정해야 할 파일**:
     - `dto/NoticeDTO.java`: 알림 필드 확장
-    - `mapper/NoticeMapper.xml`: 알림 생성/읽음 처리 쿼리
-    - `controller/NoticeController.java`: 알림 API 구현
-- **참고**: `NoticeService.sendNotice()` 메서드는 다른 팀원이 호출해서 쓸 수 있게 설계하세요.
+    - `controller/NoticeController.java`: 알림 API 구현 (메모리상 처리 또는 단순 로그)
+    - **삭제됨**: `mapper/NoticeMapper.xml` (테이블 미사용으로 삭제)
+- **참고**: `NoticeService.sendNotice()` 메서드는 다른 팀원이 호출해서 쓸 수 있게 설계하세요. (DB 저장 없음)
+
+---
 
 ---
 
