@@ -6,6 +6,11 @@
 2. [기획](#-기획-planning)
     - [3️⃣ 요구사항 상세](#3️⃣-요구사항-상세-requirements-specification)
     - [4️⃣ 시스템 설계](#4️⃣-시스템-설계)
+        - [3.1 유스케이스](#31-유스케이스-use-case)
+        - [3.2 ERD](#32-erd-entity-relationship-diagram)
+        - [3.3 DDL](#33-ddl-data-definition-language)
+        - [3.4 스키마 관리 흐름](#34-스키마-관리-흐름-schema-management-flow)
+        - [3.5 데이터 처리 흐름](#35-데이터-처리-흐름-data-processing-flow)
 3. [개발자 가이드](#-개발자-가이드-developer-guide)
     - [5️⃣ 프로젝트 진행 전략](#5️⃣-프로젝트-진행-전략)
     - [6️⃣ 트러블슈팅](#6️⃣-트러블슈팅-db-연결-문제-해결)
@@ -150,6 +155,7 @@ erDiagram
         INT TBL_ID PK "테이블 ID"
         VARCHAR TBL_NM "테이블명"
         VARCHAR TBL_DESC "설명"
+        INT USER_ID FK "생성자 ID"
         TIMESTAMP REG_DT "등록일"
     }
 
@@ -171,6 +177,7 @@ erDiagram
         TIMESTAMP CHG_DT "수정일"
     }
 
+    USERS ||--|{ TBL_META : "owns"
     TBL_META ||--|{ COL_META : "defines columns for"
     TBL_META ||--|{ TBL_SAMPLE : "contains data for"
 ```
@@ -195,7 +202,9 @@ CREATE TABLE TBL_META (
     TBL_ID INT AUTO_INCREMENT PRIMARY KEY COMMENT '테이블 고유 ID',
     TBL_NM VARCHAR(50) NOT NULL COMMENT '테이블 이름',
     TBL_DESC VARCHAR(255) COMMENT '테이블 설명',
-    REG_DT TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '등록일자'
+    USER_ID INT NOT NULL COMMENT '생성자 ID(FK)',
+    REG_DT TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '등록일자',
+    CONSTRAINT TBL_META_FK1 FOREIGN KEY (USER_ID) REFERENCES USERS (USER_ID) ON DELETE CASCADE
 ) ENGINE = InnoDB COMMENT = '테이블 메타 데이터';
 
 -- 3. Columns Metadata
@@ -239,7 +248,97 @@ CREATE INDEX IDX_USERS_EMAIL ON USERS (EMAIL);
 > 이 프로젝트는 사용자가 정의한 테이블과 컬럼 구조가 수시로 변경될 수 있는 **가상 DBMS환경**입니다.
 > 매번 물리적인 `CREATE TABLE` / `ALTER TABLE`을 수행하는 대신, **메타데이터(`TBL_META`, `COL_META`)로 구조를 정의**하고 **실제 데이터는 `TBL_SAMPLE`의 JSON 컬럼에 유연하게 저장**하는 방식을 채택하여, 안전하고 유연한 스키마 관리를 구현했습니다.
 
-### 3.4 주요 기능 흐름 (Key Feature Flow)
+### 3.4 스키마 관리 흐름 (Schema Management Flow)
+
+사용자 관점의 경험과 실제 내부 동작(Internal Mechanism)을 비교한 흐름입니다.
+
+#### 0️⃣ 전제 조건: 로그인
+- **로그인 전**: 어떤 테이블도 보이지 않으며, 모든 URL 접근이 차단됩니다.
+- **로그인 후**: **"내가 만든 테이블"**만 관리할 수 있습니다.
+- 👉 *"DB를 만진다"는 개념을 로그인 사용자 기준으로 명확히 분리합니다.*
+
+#### 1️⃣ 테이블 생성 흐름 (CREATE TABLE)
+- **🔹 사용자 화면 (User Action)**
+    1. `[테이블 관리]` 메뉴 클릭
+    2. `[새 테이블 생성]` 버튼 클릭 → 테이블 이름/설명 입력
+    3. `[생성]` 버튼 클릭
+- **🔹 사용자 경험 (User Experience)**
+    - 테이블 목록에 새 테이블이 즉시 추가됨
+    - *"이제 이 테이블에 컬럼을 추가할 수 있겠구나"*라고 인지
+- **🔹 내부 동작 (Internal Mechanism)**
+    - ❌ `CREATE TABLE` 실행 안 함
+    - ⭕ **TBL_META에 INSERT**
+      ```sql
+      INSERT INTO TBL_META (TBL_NM, TBL_DESC, USER_ID)
+      VALUES ('LEDGER', '가계부 테이블', 1);
+      ```
+    - **Point**: 실제 DB에 테이블을 만들지 않고, **"테이블처럼 보이게"** 만드는 정의 정보만 저장합니다.
+
+#### 2️⃣ 컬럼 추가 흐름 (ADD COLUMN)
+- **🔹 사용자 화면 (User Action)**
+    1. 테이블 상세 화면 진입 → `[컬럼 관리]` 영역 확인
+    2. `[컬럼 추가]` 버튼 클릭
+    3. 컬럼명(`AMOUNT`), 타입(`INT`), NULL 여부 등 입력 → `[저장]`
+- **🔹 사용자 경험 (User Experience)**
+    - 컬럼 목록 Grid에 즉시 반영
+    - 이후 데이터 입력 폼에 해당 컬럼이 자동으로 생겨남
+- **🔹 내부 동작 (Internal Mechanism)**
+    - ❌ `ALTER TABLE ADD COLUMN` 실행 안 함
+    - ⭕ **COL_META에 INSERT**
+      ```sql
+      INSERT INTO COL_META (TBL_ID, COL_NM, DATA_TYPE, NULLABLE, ORDER_NO)
+      VALUES (1, 'AMOUNT', 'INT', 'N', 3);
+      ```
+    - **Point**: 이 순간부터 조회/입력/수정 화면이 이 컬럼 정보를 읽어 **자동으로 렌더링**됩니다.
+
+#### 3️⃣ 컬럼 조회 흐름 (DESCRIBE TABLE)
+- **🔹 사용자 화면 (User Action)**
+    - 테이블 클릭만 하면 컬럼명, 타입, PK 여부 등이 자동으로 보임
+- **🔹 내부 동작 (Internal Mechanism)**
+    ```sql
+    SELECT COL_NM, DATA_TYPE, NULLABLE, ORDER_NO
+    FROM COL_META
+    WHERE TBL_ID = ?
+    ORDER BY ORDER_NO;
+    ```
+    - 👉 사용자는 *"이 테이블 구조가 이렇게 생겼구나"*를 SQL 없이 시각적으로 이해합니다.
+
+#### 4️⃣ 컬럼 수정 흐름 (MODIFY COLUMN)
+- **🔹 사용자 화면 (User Action)**
+    1. 컬럼 목록에서 `[수정]` 버튼 클릭
+    2. 이름/타입/순서 변경 → `[저장]`
+- **🔹 사용자 경험 (User Experience)**
+    - 컬럼 정보가 즉시 반영되고, 데이터 입력 폼 구조도 변경됨
+- **🔹 내부 동작 (Internal Mechanism)**
+    - ❌ `ALTER TABLE MODIFY COLUMN` 실행 안 함
+    - ⭕ **COL_META UPDATE**
+      ```sql
+      UPDATE COL_META
+      SET COL_NM = 'TOTAL_AMOUNT', NULLABLE = 'Y'
+      WHERE COL_ID = 5;
+      ```
+    - **Point**: 이미 저장된 데이터(JSON)는 건드리지 않고, **화면 렌더링 기준(Meta)**만 변경합니다. (논리 스키마 변경 체험)
+
+#### 5️⃣ 컬럼 삭제 흐름 (DROP COLUMN)
+- **🔹 사용자 화면 (User Action)**
+    1. `[삭제]` 클릭 → *"정말 삭제하시겠습니까?"* 확인
+    2. 확인 시 삭제됨
+- **🔹 사용자 경험 (User Experience)**
+    - 컬럼이 목록에서 사라지고, 조회/입력 화면에서도 더 이상 보이지 않음
+- **🔹 내부 동작 (Internal Mechanism)**
+    - ❌ `ALTER TABLE DROP COLUMN` 실행 안 함
+    - ⭕ **COL_META DELETE**
+      ```sql
+      DELETE FROM COL_META WHERE COL_ID = 7;
+      ```
+    - **Point**: 데이터(JSON)에는 해당 Key가 남아있을 수 있지만, 메타 정보가 사라졌으므로 시스템은 해당 데이터를 **"없는 취급"**합니다 (논리적 삭제).
+
+#### 6️⃣ 요약 (Summary)
+> **로그인** → **테이블 정의(TBL_META)** → **컬럼 정의(COL_META)** → **메타 기준 화면 자동 생성**
+
+사용자는 끝까지 **SQL을 한 줄도 쓰지 않고**, 테이블과 컬럼을 직접 설계하는 경험을 하며, **DB 구조 변경이 시스템에 미치는 영향**을 눈으로 직접 확인하게 됩니다.
+
+### 3.5 데이터 처리 흐름 (Data Processing Flow)
 
 핵심 기능인 **동적 테이블 조회**와 **데이터 저장**이 내부적으로 어떻게 동작하는지 보여주는 흐름도입니다.
 
