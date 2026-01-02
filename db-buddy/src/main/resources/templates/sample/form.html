@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${table.tblNm} + ' - Form'"></title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .sql-preview {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav th:replace="~{fragments/layout :: header}"></nav>
+
+    <div class="container" style="max-width: 800px;">
+        <div class="glass-panel">
+            <h1 th:text="${table.tblNm} + (${data != null} ? ' 수정' : ' 등록')"
+                style="text-align:center; margin-bottom:30px;"></h1>
+
+            <form action="/samples/save" method="post" id="dataForm">
+                <input type="hidden" name="tblId" th:value="${table.tblId}">
+                <input type="hidden" name="sampleId" th:if="${sampleId != null}" th:value="${sampleId}">
+
+                <div th:each="col : ${columns}" class="form-group">
+                    <label th:for="${col.colNm}"
+                        th:text="${col.colNm} + (${col.isNullable == 'N'} ? ' *' : '')"></label>
+
+                    <!-- Type based rendering -->
+
+                    <!-- Date -->
+                    <input th:if="${col.typeNm == 'DATE'}" type="date" th:id="${col.colNm}" th:name="${col.colNm}"
+                        th:required="${col.isNullable == 'N'}" th:value="${data != null ? data[col.colNm] : ''}">
+
+                    <!-- Number -->
+                    <input th:if="${col.typeNm == 'INT' or col.typeNm == 'FLOAT' or col.typeNm == 'DOUBLE'}"
+                        type="number" th:id="${col.colNm}" th:name="${col.colNm}" th:required="${col.isNullable == 'N'}"
+                        th:value="${data != null ? data[col.colNm] : ''}">
+
+                    <!-- Text/Varchar -->
+                    <input th:if="${col.typeNm == 'VARCHAR' or col.typeNm == 'CHAR'}" type="text" th:id="${col.colNm}"
+                        th:name="${col.colNm}" th:maxlength="${col.typeLength}" th:required="${col.isNullable == 'N'}"
+                        th:value="${data != null ? data[col.colNm] : ''}">
+
+                    <textarea th:if="${col.typeNm == 'TEXT'}" th:id="${col.colNm}" th:name="${col.colNm}"
+                        th:required="${col.isNullable == 'N'}" rows="4"
+                        th:text="${data != null ? data[col.colNm] : ''}"></textarea>
+
+                    <!-- Fallback -->
+                    <input
+                        th:if="${col.typeNm != 'DATE' and col.typeNm != 'INT' and col.typeNm != 'FLOAT' and col.typeNm != 'DOUBLE' and col.typeNm != 'VARCHAR' and col.typeNm != 'CHAR' and col.typeNm != 'TEXT'}"
+                        type="text" th:id="${col.colNm}" th:name="${col.colNm}" th:required="${col.isNullable == 'N'}"
+                        th:value="${data != null ? data[col.colNm] : ''}">
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-top: 30px;">
+                    <a th:href="@{/samples(tblId=${table.tblId})}" class="btn btn-secondary">취소</a>
+                    <button type="submit" class="btn btn-primary"
+                        onclick="alert('SQL Preview 확인 후 저장됩니다.\n\n' + generateSQL());">저장</button>
+                </div>
+            </form>
+
+            <div class="sql-preview">
+                <h3 style="color:#66d9ef; margin-top:0;">SQL Preview</h3>
+                <p id="sqlViewer" style="margin:0;">Change values to see SQL...</p>
+            </div>
+        </div>
+    </div>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const tableName = /*[[${table.tblNm}]]*/ 'TABLE';
+        const isUpdate = /*[[${data != null}]]*/ false;
+        /*]]>*/
+
+        const form = document.getElementById('dataForm');
+        const inputs = form.querySelectorAll('input, textarea, select');
+        const sqlViewer = document.getElementById('sqlViewer');
+
+        function generateSQL() {
+            if (isUpdate) {
+                let setClause = [];
+                inputs.forEach(input => {
+                    if (input.type !== 'hidden' && input.type !== 'submit') {
+                        let val = input.value ? `'${input.value}'` : 'NULL';
+                        setClause.push(`${input.name} = ${val}`);
+                    }
+                });
+                return `UPDATE ${tableName}\nSET ${setClause.join(', ')}\nWHERE ...`;
+            } else {
+                let cols = [];
+                let vals = [];
+                inputs.forEach(input => {
+                    if (input.type !== 'hidden' && input.type !== 'submit') {
+                        cols.push(input.name);
+                        vals.push(input.value ? `'${input.value}'` : 'NULL');
+                    }
+                });
+                return `INSERT INTO ${tableName} (${cols.join(', ')})\nVALUES (${vals.join(', ')})`;
+            }
+        }
+
+        [].forEach.call(inputs, function (input) {
+            input.addEventListener('input', function () {
+                sqlViewer.innerText = generateSQL();
+            });
+        });
+
+        // Initial load
+        sqlViewer.innerText = generateSQL();
+    </script>
+
+</body>
+
+</html>

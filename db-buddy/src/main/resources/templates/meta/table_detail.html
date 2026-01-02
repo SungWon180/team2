@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DB Buddy - Table Structure</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+
+    <th:block th:unless="${param.embedded}">
+        <nav th:replace="~{fragments/layout :: header}"></nav>
+    </th:block>
+
+    <div class="container">
+        <div class="glass-panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <div style="display:flex; align-items:baseline; gap:10px;">
+                    <h1 th:text="${table.tblNm}" style="margin:0;"></h1>
+                    <span th:text="${table.tblDesc}" style="color:#666;"></span>
+                </div>
+                <a href="/meta/tables" class="btn btn-secondary" th:unless="${param.embedded}">목록으로</a>
+            </div>
+
+            <!-- Add Column Form -->
+            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px;">
+                <h3 style="margin-top:0;">컬럼 추가</h3>
+                <form action="/meta/columns/create" method="post"
+                    style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <input type="hidden" name="tblId" th:value="${table.tblId}">
+                    <input type="hidden" name="embedded" th:value="${param.embedded}" th:if="${param.embedded}">
+                    <input type="text" name="colNm" placeholder="컬럼명 (예: PRICE)" required style="width:150px;">
+
+                    <select name="typeId" id="typeSelect" onchange="toggleLength(this)" required style="width:120px;">
+                        <option value="">타입 선택</option>
+                        <option th:each="type : ${dataTypes}" th:value="${type.typeId}" th:text="${type.typeNm}">
+                        </option>
+                    </select>
+
+                    <input type="number" name="typeLength" id="typeLength" placeholder="길이" value="0" disabled
+                        style="width:80px;">
+
+                    <select name="isNullable" style="width:100px;">
+                        <option value="Y">NULL 허용</option>
+                        <option value="N">Not Null</option>
+                    </select>
+
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" name="isPk" id="newColPk" value="Y" onchange="toggleAi(this)">
+                        <label for="newColPk" style="margin:0; font-size:0.9rem;">PK</label>
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" name="isAutoIncrement" id="newColAi" value="Y" disabled>
+                        <label for="newColAi" style="margin:0; font-size:0.9rem;">AI</label>
+                    </div>
+
+                    <input type="number" name="orderNo" placeholder="순서" value="0" style="width:60px;">
+
+                    <button type="submit" class="btn btn-primary">추가</button>
+                </form>
+            </div>
+
+            <!-- Column List -->
+            <table>
+                <thead>
+                    <tr>
+                        <th width="50">순서</th>
+                        <th>컬럼명</th>
+                        <th>데이터 타입</th>
+                        <th>길이</th>
+                        <th>Null 허용</th>
+                        <th>PK</th>
+                        <th>AI</th>
+                        <th width="100">관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(columns)}">
+                        <td colspan="6" style="text-align:center;">컬럼이 없습니다. 위에서 추가해주세요.</td>
+                    </tr>
+                    <tr th:each="col : ${columns}">
+                        <td th:text="${col.orderNo}"></td>
+                        <td th:text="${col.colNm}" style="font-weight:bold;"></td>
+                        <td th:text="${col.typeNm}"></td>
+                        <td th:text="${col.typeLength == 0 ? '-' : col.typeLength}"></td>
+                        <td>
+                            <span th:if="${col.isNullable == 'Y'}" style="color:#27ae60; font-weight:bold;">Yes</span>
+                            <span th:if="${col.isNullable == 'N'}" style="color:#c0392b; font-weight:bold;">No</span>
+                        </td>
+                        <td th:text="${col.isPk}"></td>
+                        <td th:text="${col.isAutoIncrement}"></td>
+                        <td>
+                            <form action="/meta/columns/delete" method="post"
+                                onsubmit="return confirm('정말 삭제하시겠습니까? 데이터가 조회되지 않을 수 있습니다.');">
+                                <input type="hidden" name="colId" th:value="${col.colId}">
+                                <input type="hidden" name="tblId" th:value="${table.tblId}">
+                                <input type="hidden" name="embedded" th:value="${param.embedded}"
+                                    th:if="${param.embedded}">
+                                <button type="submit" class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;"
+                                    th:disabled="${col.isPk == 'Y'}"
+                                    th:text="${col.isPk == 'Y' ? 'PK (삭제불가)' : '삭제'}">삭제</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <th:block th:unless="${param.embedded}">
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </th:block>
+
+    <script>
+        function toggleLength(select) {
+            const text = select.options[select.selectedIndex].text;
+            const lengthInput = document.getElementById('typeLength');
+            if (text === 'VARCHAR' || text === 'CHAR') {
+                lengthInput.disabled = false;
+                lengthInput.focus();
+            } else {
+                lengthInput.disabled = true;
+                lengthInput.value = 0;
+            }
+        }
+
+        function toggleAi(chk) {
+            const ai = document.getElementById('newColAi');
+            if (chk.checked) {
+                ai.disabled = false;
+            } else {
+                ai.checked = false;
+                ai.disabled = true;
+            }
+        }
+    </script>
+
+</body>
+
+</html>

@@ -76,7 +76,7 @@
 #### 🛠️ 2. 스키마 관리 (Schema Management)
 | ID | 구분 | 요구사항 명 | 상세 내용 및 검증 기준 (Acceptance Criteria) |
 |:---:|:---:|:---|:---|
-| **FR-201** | 테이블 | **테이블 생성** | - 영문/숫자/언더바(`_`) 조합의 최대 50자 이름을 가진 테이블을 정의한다.<br>- **[검증]** 특수문자나 공백 입력 시 생성을 차단해야 한다.<br>- **[성공]** 생성된 테이블은 즉시 '내 테이블 목록'에 추가되어야 한다. |
+| **FR-201** | 테이블 | **테이블 생성** | - **[모달 UI]** 테이블 생성 시 '새 테이블 만들기' 모달을 통해 진행된다.<br>- 영문/숫자/언더바(`_`) 조합의 이름을 지원하며 한글 및 특수문자는 차단된다.<br>- **[고급 기능]** 생성 시 컬럼 목록을 정의할 수 있으며, **PK(기본키)** 및 **AI(자동증가)** 여부를 설정할 수 있다.<br>- **[유효성]** 최소 1개 이상의 PK가 반드시 존재해야 한다. |
 | **FR-202** | 테이블 | **목록 조회** | - **[격리]** 로그인한 사용자가 생성한 테이블만 목록에 노출한다(타인 테이블 및 시스템 테이블 노출 금지).<br>- 테이블이 없을 경우 "생성된 테이블이 없습니다" 문구를 표시한다. |
 | **FR-203** | 컬럼 | **컬럼 추가** | - 컬럼명, 데이터 타입, 길이, NULL 여부를 설정하여 추가한다.<br>- **[검증]** 데이터 타입은 시스템이 제공하는 목록(`DATA_TYPES`) 중에서만 선택 가능하다.<br>- **[UX]** `VARCHAR` 타입 선택 시에만 길이(`Length`) 입력 필드가 활성화되어야 한다. |
 | **FR-204** | 컬럼 | **컬럼 수정** | - 기존 컬럼의 이름, 타입, 길이를 수정할 수 있다.<br>- **[동기화]** 컬럼명 변경 시 `TBL_SAMPLE`의 모든 JSON 데이터에서 해당 Key를 찾아 새로운 이름으로 변경(Migration)해야 한다.<br>- **[트랜잭션]** 메타정보 수정과 데이터 일괄 업데이트는 하나의 트랜잭션으로 묶여야 한다. |
@@ -86,8 +86,8 @@
 | ID | 구분 | 요구사항 명 | 상세 내용 및 검증 기준 (Acceptance Criteria) |
 |:---:|:---:|:---|:---|
 | **FR-301** | 조회 | **데이터 조회** | - 선택한 테이블의 데이터를 페이징(10건 단위) 처리하여 조회한다.<br>- **[필터]** 체크박스로 선택된 컬럼만 그리드에 표시되어야 한다.<br>- **[성능]** 데이터 100건 조회 시 렌더링이 1초 이내에 완료되어야 한다. |
-| **FR-302** | 입력 | **데이터 추가** | - 컬럼 메타정보에 맞춰 생성된 폼으로 데이터를 저장(`INSERT`)한다.<br>- **[검증]** `INT` 컬럼에 문자를 입력하거나 `VARCHAR` 길이를 초과하면 유효성 에러를 출력한다.<br>- **[타입]** `DATE` 타입은 달력(Date Picker) UI를 제공해야 한다. |
-| **FR-303** | 수정 | **데이터 수정** | - 선택한 행(Row)의 데이터를 수정(`UPDATE`)한다.<br>- **[제약]** PK 역할을 하는 시스템 컬럼(`SAMPLE_ID`)은 수정할 수 없다(`readonly`). |
+| **FR-302** | 입력 | **데이터 추가 (Spreadsheet)** | - **[동적모달]** '데이터 입력' 버튼 클릭 시 모달 폼이 팝업된다.<br>- **[자동완성]** Auto Increment 컬럼은 입력 폼에서 제외되거나 무시되며, 시스템이 자동으로 Max+1 값을 할당한다.<br>- **[제약]** PK 중복 시 저장이 차단된다. |
+| **FR-303** | 수정 | **데이터 수정** | - 그리드 뷰에서 직접 데이터를 수정하거나 상세 폼을 통해 수정한다.<br>- **[제약]** PK 설정된 컬럼의 데이터 변경은 데이터 무결성을 위해 신중히 처리되어야 한다. |
 | **FR-304** | 삭제 | **데이터 삭제** | - 선택한 행을 삭제(`DELETE`)한다.<br>- **[안전]** 삭제 버튼 클릭 시 재확인(Confirm) 절차를 거쳐야 한다. |
 | **FR-305** | 도구 | **SQL 미리보기** | - 사용자의 동작(CRUD)에 해당하는 SQL 쿼리를 화면 하단에 실시간으로 표시한다.<br>- **[형식]** `INSERT INTO [TABLE]...`와 같이 사용자가 이해하기 쉬운 논리적 SQL 형태로 변환하여 보여준다. |
 
@@ -265,16 +265,21 @@ CREATE TABLE TBL_META (
 ) ENGINE = InnoDB COMMENT = '테이블 메타 데이터';
 
 -- 4. Columns Metadata
+-- 4. Columns Metadata
 CREATE TABLE COL_META (
     COL_ID INT AUTO_INCREMENT PRIMARY KEY COMMENT '컬럼 고유 ID',
     TBL_ID INT NOT NULL COMMENT '테이블 ID(FK)',
     COL_NM VARCHAR(50) NOT NULL COMMENT '컬럼 이름',
     TYPE_ID INT NOT NULL COMMENT '데이터 타입 ID(FK)',
     TYPE_LENGTH INT DEFAULT 0 COMMENT '데이터 길이 (VARCHAR 등)',
-    NULLABLE CHAR(1) DEFAULT 'Y' COMMENT 'NULL 허용 여부 (Y/N)',
+    IS_NULLABLE CHAR(1) DEFAULT 'Y' COMMENT 'NULL 허용 여부 (Y/N)',
+    IS_PK CHAR(1) DEFAULT 'N' COMMENT 'PK 여부 (Y/N)',
+    IS_AUTO_INCREMENT CHAR(1) DEFAULT 'N' COMMENT 'Auto Increment 여부 (Y/N)',
     ORDER_NO INT DEFAULT 0 COMMENT '컬럼 순서',
     REG_DT TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '등록일자',
-    CONSTRAINT CK_COL_META_NULLABLE CHECK (NULLABLE IN ('Y', 'N')),
+    CONSTRAINT CK_COL_META_NULLABLE CHECK (IS_NULLABLE IN ('Y', 'N')),
+    CONSTRAINT CK_COL_META_PK CHECK (IS_PK IN ('Y', 'N')),
+    CONSTRAINT CK_COL_META_AI CHECK (IS_AUTO_INCREMENT IN ('Y', 'N')),
     CONSTRAINT COL_META_FK1 FOREIGN KEY (TBL_ID) REFERENCES TBL_META (TBL_ID) ON DELETE CASCADE,
     CONSTRAINT COL_META_FK2 FOREIGN KEY (TYPE_ID) REFERENCES DATA_TYPES (TYPE_ID) ON DELETE RESTRICT
 ) ENGINE = InnoDB COMMENT = '컬럼 메타 데이터';

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DB Buddy</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style th:replace="~{::style}"></style> <!-- Valid layout for fragments -->
+</head>
+
+<body>
+
+    <nav class="navbar" th:fragment="header">
+        <div class="container" style="margin: 0 auto;">
+            <a href="/meta/tables" class="navbar-brand">DB Buddy</a>
+            <div class="navbar-user" th:if="${session.loginUser != null}">
+                <span th:text="${session.loginUser.userNm} + '님'"></span>
+                <a href="/user/logout">로그아웃</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" layout:fragment="content">
+        <!-- Content will be injected here -->
+    </div>
+
+    <footer th:fragment="footer" style="text-align: center; margin-top: 50px; color: #999; padding-bottom: 20px;">
+        &copy; 2024 DB Buddy Project.
+    </footer>
+
+</body>
+
+</html>

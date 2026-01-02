@@ -3,7 +3,9 @@
 <mapper namespace="com.team2.dbbuddy.mapper.SampleMapper">
 
     <select id="findAll" resultType="SampleDTO">
-        SELECT * FROM TBL_SAMPLE
+        SELECT * FROM TBL_SAMPLE 
+        WHERE TBL_ID = #{tblId}
+        ORDER BY SAMPLE_ID DESC
     </select>
 
     <select id="findById" resultType="SampleDTO">
@@ -18,7 +20,6 @@
     <update id="update" parameterType="SampleDTO">
         UPDATE TBL_SAMPLE
         SET DATA_JSON = #{dataJson},
-            ACTIVE_FL = #{activeFl},
             CHG_DT = NOW()
         WHERE SAMPLE_ID = #{sampleId}
     </update>

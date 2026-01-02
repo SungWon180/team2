@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DB Buddy - Login</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+
+        .login-container {
+            width: 350px;
+            padding: 40px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="glass-panel login-container">
+        <h2 style="margin-bottom: 30px; color: #2c3e50;">DB Buddy</h2>
+
+        <div th:if="${error}"
+            style="background-color: #fce4e4; border: 1px solid #fcc2c3; padding: 10px; border-radius: 6px; margin-bottom: 20px; color: #cc0033;">
+            <p th:text="${error}" style="margin:0; font-size: 0.9rem;"></p>
+        </div>
+
+        <form action="/user/login" method="post">
+            <div class="form-group">
+                <input type="email" id="email" name="email" placeholder="이메일" required>
+            </div>
+            <div class="form-group">
+                <input type="password" id="password" name="password" placeholder="비밀번호" required>
+            </div>
+            <button type="submit" class="btn btn-primary"
+                style="width: 100%; padding: 12px; font-size: 1rem;">로그인</button>
+            <div style="margin-top:10px; display:flex; align-items:center; gap:5px;">
+                <input type="checkbox" id="saveId" style="width:auto; margin:0;">
+                <label for="saveId" style="font-size:0.9rem; margin:0;">아이디 저장</label>
+            </div>
+        </form>
+
+        <div style="margin-top: 20px; font-size: 0.9rem;">
+            <p>계정이 없으신가요? <a href="/user/signup">회원가입</a></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const emailInput = document.getElementById('email');
+            const saveIdCheck = document.getElementById('saveId');
+
+            // Get Cookie
+            const getCookie = (name) => {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+
+            const savedEmail = getCookie('savedEmail');
+            if (savedEmail) {
+                emailInput.value = savedEmail;
+                saveIdCheck.checked = true;
+            }
+
+            // Form Submit - Set Cookie
+            document.querySelector('form').addEventListener('submit', function () {
+                if (saveIdCheck.checked) {
+                    const date = new Date();
+                    date.setTime(date.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
+                    document.cookie = `savedEmail=${emailInput.value}; expires=${date.toUTCString()}; path=/`;
+                } else {
+                    document.cookie = 'savedEmail=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

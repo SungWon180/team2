@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team2.dbbuddy.mapper.MetaMapper">
+
+    <!-- Table Meta -->
+    <insert id="saveTable" parameterType="TableMetaDTO" useGeneratedKeys="true" keyProperty="tblId">
+        INSERT INTO TBL_META (TBL_NM, TBL_DESC, USER_ID, REG_DT)
+        VALUES (#{tblNm}, #{tblDesc}, #{userId}, NOW())
+    </insert>
+
+    <select id="findTablesByUserId" resultType="TableMetaDTO">
+        SELECT * FROM TBL_META WHERE USER_ID = #{userId} ORDER BY TBL_ID DESC
+    </select>
+    
+    <select id="findTableById" resultType="TableMetaDTO">
+        SELECT * FROM TBL_META WHERE TBL_ID = #{tblId}
+    </select>
+
+    <!-- Column Meta -->
+    <insert id="saveColumn" parameterType="ColumnMetaDTO" useGeneratedKeys="true" keyProperty="colId">
+        INSERT INTO COL_META (TBL_ID, COL_NM, TYPE_ID, TYPE_LENGTH, IS_NULLABLE, IS_PK, IS_AUTO_INCREMENT, ORDER_NO, REG_DT)
+        VALUES (#{tblId}, #{colNm}, #{typeId}, #{typeLength}, #{isNullable}, #{isPk}, #{isAutoIncrement}, #{orderNo}, NOW())
+    </insert>
+
+    <select id="findColumnsByTableId" resultType="ColumnMetaDTO">
+        SELECT 
+            C.*, 
+            D.TYPE_NM 
+        FROM COL_META C
+        JOIN DATA_TYPES D ON C.TYPE_ID = D.TYPE_ID
+        WHERE C.TBL_ID = #{tblId}
+        ORDER BY C.ORDER_NO, C.COL_ID
+    </select>
+    
+    <update id="updateColumn" parameterType="ColumnMetaDTO">
+        UPDATE COL_META
+        SET COL_NM = #{colNm},
+            TYPE_ID = #{typeId},
+            TYPE_LENGTH = #{typeLength},
+            IS_NULLABLE = #{isNullable},
+            IS_PK = #{isPk},
+            IS_AUTO_INCREMENT = #{isAutoIncrement},
+            ORDER_NO = #{orderNo}
+        WHERE COL_ID = #{colId}
+    </update>
+    
+    <delete id="deleteColumn">
+        DELETE FROM COL_META WHERE COL_ID = #{colId}
+    </delete>
+
+    <!-- Data Types -->
+    <select id="findAllDataTypes" resultType="DataTypeDTO">
+        SELECT * FROM DATA_TYPES ORDER BY TYPE_ID
+    </select>
+
+</mapper>

@@ -6,7 +6,7 @@ import java.util.List;
 
 @Mapper
 public interface SampleMapper {
-    List<SampleDTO> findAll();
+    List<SampleDTO> findAll(Integer tblId);
 
     SampleDTO findById(Integer id);
 

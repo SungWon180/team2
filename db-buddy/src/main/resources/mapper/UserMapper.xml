@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team2.dbbuddy.mapper.UserMapper">
+
+    <insert id="save" parameterType="UserDTO" useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO USERS (USER_NM, EMAIL, PASSWD, ACTIVE_FL, REG_DT)
+        VALUES (#{userNm}, #{email}, #{passwd}, 'Y', NOW())
+    </insert>
+
+    <select id="findByEmail" resultType="UserDTO">
+        SELECT * FROM USERS WHERE EMAIL = #{email}
+    </select>
+
+    <select id="countByEmail" resultType="int">
+        SELECT COUNT(*) FROM USERS WHERE EMAIL = #{email}
+    </select>
+
+</mapper>
